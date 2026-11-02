@@ -1,103 +1,90 @@
-# PropertyHub — Module 4: CRUD Operations
+# PropertyHub
 
-PropertyHub is a resident portal for property details, maintenance requests, shared amenity bookings and community updates. Module 4 completes the community blog workflow with create, read, update and delete operations, category labels, and search and category filters.
-
-## Tech stack
-
-- Frontend: React, Vite, React Router and Lucide React
-- Backend: Node.js and Express 4
-- Database: MongoDB Atlas or a local MongoDB server, accessed with Mongoose 8
-- Authentication: salted password hashing with Node's built-in `scrypt`; only a hash of each seven-day bearer session is stored
-- Email addresses are normalized and protected by a unique database index; password hashes are excluded from normal user queries and API responses
+PropertyHub is a responsive resident-services web app for organizing maintenance requests, amenity bookings, resident accounts and a community blog. The final project combines a React frontend, an Express API and MongoDB-backed authentication and blog data.
 
 ## Features
 
-- Resident registration, sign-in, profile edits and sign-out
-- MongoDB-backed resident and manager accounts, sessions and community blog posts
-- Authenticated REST APIs for amenities, maintenance requests, bookings and community blog posts
-- Blog list retrieved from MongoDB and a separate detail page for every post
-- Full blog CRUD with ownership checks: authors manage their own posts and managers can moderate all posts
-- Search posts by title, content or author; filter by Community, Events, Maintenance, Lifestyle or Announcements
-- Blog validation, edited timestamps and explicit delete confirmation
-- Manager-only maintenance status updates
-- Booking overlap checks and cancellation permissions
-- Server-side request validation and protected routes
-- Responsive frontend connected to the backend
+- Resident registration, sign-in, profile editing and sign-out
+- Protected resident pages and a personal dashboard
+- MongoDB persistence for accounts, sessions and community posts
+- Create, read, update and delete community posts, with ownership checks
+- Search posts and filter them by category
+- Amenity booking with overlapping time-slot checks
+- Maintenance request and manager status workflows
+- Mobile navigation and responsive layouts for small screens
+- A single-service Render deployment: Express serves the built React app and `/api` endpoints
 
-## Set up MongoDB
+## Technology
 
-Install Node.js LTS and create a MongoDB database. MongoDB Atlas works for a hosted database; a local MongoDB server also works. In Atlas, create a database user, allow your development machine's IP under Network Access, and copy the Node.js connection string. Replace its username, password and cluster host with your Atlas values. URL-encode special characters in the database password. Do not commit your real connection string.
+- React 18, Vite 6, React Router and Lucide React
+- Node.js 20+, Express 4 and Mongoose 8
+- MongoDB Atlas or a local MongoDB server
+- Render Web Service for the combined frontend and API
 
-Copy `.env.example` to `.env`, then set `MONGODB_URI` to your connection string. The backend will not start until it can connect to MongoDB.
+## Project layout
 
-On Windows PowerShell, create the private environment file with:
-
-```powershell
-Copy-Item .env.example .env
+```text
+server/        Express API, authentication and database models
+src/           React pages, components, API client and app state
+render.yaml    Render Blueprint for the production web service
+DEPLOYMENT.md  Step-by-step Atlas and Render instructions
 ```
 
-Edit `.env` and add the MongoDB URI. Keep `.env` private; it is ignored by Git.
+## Run locally
 
-## Run on your computer
+1. Install Node.js 20 or newer and start a local MongoDB server, or create a MongoDB Atlas database.
+2. In the project folder, create a private environment file:
 
-Install the dependencies from the project folder:
+   ```powershell
+   Copy-Item .env.example .env
+   ```
+
+3. Put your database connection string in `.env` as `MONGODB_URI`. Keep `.env` out of GitHub.
+4. Install dependencies and start the API and Vite frontend in separate terminals:
+
+   ```bash
+   npm ci
+   npm run server
+   ```
+
+   ```bash
+   npm run dev
+   ```
+
+5. Open the local URL printed by Vite. The API health endpoint is `http://localhost:4000/api/health`.
+
+For a local production-style run, build the frontend and start the combined server:
 
 ```bash
-npm install
+npm run build
+npm start
 ```
 
-Open **two terminals** in the same project folder. Start the backend in Terminal 1:
+The server uses `PORT` when provided by the host, and serves the frontend and API from the same origin.
 
-```bash
-npm run server
-```
+## Deploy
 
-Start the website in Terminal 2:
+The repository includes `render.yaml`. Connect the GitHub repository to Render as a Blueprint, enter the secret `MONGODB_URI` when prompted, and let Render deploy the web service. See [DEPLOYMENT.md](DEPLOYMENT.md) for the MongoDB Atlas setup and exact steps.
 
-```bash
-npm run dev
-```
+## Data and security notes
 
-Open the local website URL printed by Vite, usually `http://localhost:5173`. The API runs at `http://localhost:4000`; its health endpoint is `http://localhost:4000/api/health`. It reports `database: connected` when MongoDB is ready.
+- Passwords are hashed using Node's built-in `scrypt` with a unique random salt.
+- Sessions use random bearer tokens. MongoDB stores only their SHA-256 hashes; sessions expire after seven days and sign-out revokes the active session.
+- Database credentials belong in Render's secret environment variables or a local `.env` file, never in source code.
+- Accounts, sessions and blog posts persist in MongoDB. Maintenance requests and amenity bookings are currently held in memory and reset when the server restarts; do not treat those two workflows as production storage yet.
+- Use test accounts and non-sensitive data for this internship demo.
 
-## Optional manager account
+## API overview
 
-By default, anyone can create a resident account. To seed a manager account, set these values in the private `.env` file:
-
-```env
-MANAGER_EMAIL=manager@example.com
-MANAGER_PASSWORD=choose-a-unique-password-of-12-chars
-```
-
-Restart the backend, then sign in with those credentials. The role is assigned by the server; the browser cannot promote a resident to manager.
-
-## API routes
-
-| Method | Route | Access |
+| Method | Route | Purpose |
 | --- | --- | --- |
-| GET | `/api/health` | Public |
-| POST | `/api/auth/register` | Public |
-| POST | `/api/auth/login` | Public |
-| GET, PATCH | `/api/auth/me` | Signed in |
-| POST | `/api/auth/logout` | Signed in |
-| GET | `/api/amenities` | Signed in |
-| GET, POST | `/api/maintenance` | Signed in |
-| PATCH | `/api/maintenance/:id` | Manager |
-| GET, POST | `/api/bookings` | Signed in |
-| PATCH | `/api/bookings/:id/cancel` | Booking owner or manager |
-| GET, POST | `/api/blogs` | Signed in |
-| GET | `/api/blogs/:id` | Signed in |
-| PATCH | `/api/blogs/:id` | Post author or manager |
-| DELETE | `/api/blogs/:id` | Post author or manager |
+| GET | `/api/health` | Service and database health |
+| POST | `/api/auth/register` | Create a resident account |
+| POST | `/api/auth/login` | Sign in |
+| GET, PATCH | `/api/auth/me` | Read or update the signed-in profile |
+| POST | `/api/auth/logout` | Revoke the current session |
+| GET, POST | `/api/blogs` | List or create community posts |
+| GET | `/api/blogs/mine` | List posts by the signed-in user |
+| GET, PATCH, DELETE | `/api/blogs/:id` | Read, update or delete a post |
 
-`GET /api/blogs` accepts optional `q` and `category` query parameters for server-side search and category filtering.
-
-## Data behavior
-
-Accounts, password hashes, seven-day sessions and blog posts persist in MongoDB across server restarts. Maintenance requests and amenity bookings are still held in memory and reset when the API restarts; they are outside the internship blog CRUD module's scope. Older in-memory accounts and posts are not migrated automatically.
-
-The session token itself is returned to the signed-in client and kept in that browser tab's session storage. MongoDB stores only its SHA-256 hash, and expired sessions are removed by a database TTL index. Passwords remain salted and hashed with Node's `scrypt`; plaintext passwords are never stored.
-
-## Before public deployment
-
-Set a production `CLIENT_ORIGIN`, keep MongoDB credentials in the hosting provider's secret environment variables, and restrict the Atlas network allowlist to the backend host. Add database persistence for maintenance and bookings if those features also need to survive restarts.
+The application also provides authenticated amenity, booking and maintenance routes. See `server/index.js` for the complete route list.
