@@ -48,9 +48,9 @@ export function Layout() {
         </nav>
         <div className="sidebar-help">
           <div className="help-icon"><Sparkles size={17} /></div>
-          <strong>Need help?</strong>
-          <span>Our support team is here 24/7.</span>
-          <button onClick={() => navigate('/app/profile')}>Contact support</button>
+          <strong>Account settings</strong>
+          <span>Review your personal details and preferences.</span>
+          <button onClick={() => navigate('/app/profile')}>Open profile</button>
         </div>
       </aside>
 
@@ -64,7 +64,7 @@ export function Layout() {
             <button className="notification"><Bell size={18} /><i /></button>
             <div className="user-chip" onClick={() => navigate('/app/profile')}>
               <div className="avatar">{user?.name?.slice(0, 1) || 'S'}</div>
-              <div className="user-chip-text"><strong>{user?.name || 'Shivaji'}</strong><span>{user?.role === 'manager' ? 'Property Manager' : 'Resident'}</span></div>
+              <div className="user-chip-text"><strong>{user?.name || 'Resident'}</strong><span>{user?.role === 'manager' ? 'Property Manager' : 'Resident'}</span></div>
               <ChevronDown size={15} />
             </div>
           </div>
