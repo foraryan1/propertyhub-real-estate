@@ -5,7 +5,7 @@ import { StatusBadge } from '../components/StatusBadge'
 
 export function Manager() {
   const { user, requests, bookings, updateRequest } = useApp()
-  if (user?.role !== 'manager') return <div className="page"><div className="empty-state"><ShieldCheck/><h3>Manager demo only</h3><p>Sign out and choose “Manager demo” on the login screen to view this dashboard.</p></div></div>
+  if (user?.role !== 'manager') return <div className="page"><div className="empty-state"><ShieldCheck/><h3>Manager access only</h3><p>Manager access is assigned by the backend using the optional manager account in the project setup.</p></div></div>
   return <div className="page">
     <div className="page-head"><div><div className="section-kicker">MANAGER CONSOLE</div><h1>Property operations</h1><p>Monitor maintenance and amenity activity across Greenwood Heights.</p></div><span className="manager-pill"><ShieldCheck size={15}/> Manager access</span></div>
     <div className="stats-grid manager-stats"><Stat icon={Users} label="Active residents" value="128" note="+6 this month"/><Stat icon={Wrench} label="Open requests" value={requests.filter(r=>r.status!=='Completed').length.toString().padStart(2,'0')} note="Needs attention"/><Stat icon={CalendarDays} label="Bookings today" value="08" note="Across 4 amenities"/><Stat icon={TrendingUp} label="Completion rate" value="94%" note="+3.2% this month"/></div>

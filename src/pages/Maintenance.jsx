@@ -12,7 +12,7 @@ export function Maintenance() {
   const [form, setForm] = useState({ title: '', location: 'Living room', priority: 'Medium', description: '' })
   const list = requests.filter(r => (filter === 'All' || r.status === filter) && `${r.title} ${r.location} ${r.id}`.toLowerCase().includes(query.toLowerCase()))
 
-  const submit = e => { e.preventDefault(); addRequest(form); setForm({title:'',location:'Living room',priority:'Medium',description:''}); setOpen(false) }
+  const submit = async e => { e.preventDefault(); const saved=await addRequest(form); if(saved){setForm({title:'',location:'Living room',priority:'Medium',description:''}); setOpen(false)} }
 
   return <div className="page">
     <div className="page-head"><div><div className="section-kicker">MAINTENANCE</div><h1>Maintenance requests</h1><p>Raise an issue and follow its progress from start to finish.</p></div><button className="primary-btn" onClick={() => setOpen(true)}><Plus size={17}/> New request</button></div>
