@@ -10,6 +10,7 @@ export function AppProvider({ children }) {
   const [bookings, setBookings] = useState([])
   const [amenities, setAmenities] = useState([])
   const [blogs, setBlogs] = useState([])
+  const [myBlogs, setMyBlogs] = useState([])
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState('')
 
@@ -32,13 +33,14 @@ export function AppProvider({ children }) {
   }, [toast])
 
   const loadWorkspace = async token => {
-    const [requestData, bookingData, amenityData, blogData] = await Promise.all([
-      api.maintenance(token), api.bookings(token), api.amenities(token), api.blogs(token)
+    const [requestData, bookingData, amenityData, blogData, myBlogData] = await Promise.all([
+      api.maintenance(token), api.bookings(token), api.amenities(token), api.blogs(token), api.myBlogs(token)
     ])
     setRequests(requestData.requests)
     setBookings(bookingData.bookings)
     setAmenities(amenityData.amenities)
     setBlogs(blogData.blogs)
+    setMyBlogs(myBlogData.blogs)
   }
 
   const token = () => sessionStorage.getItem(TOKEN_KEY)
@@ -69,7 +71,7 @@ export function AppProvider({ children }) {
   const logout = async () => {
     const savedToken = token()
     sessionStorage.removeItem(TOKEN_KEY)
-    setUser(null); setRequests([]); setBookings([]); setBlogs([])
+    setUser(null); setRequests([]); setBookings([]); setBlogs([]); setMyBlogs([])
     if (savedToken) { try { await api.logout(savedToken) } catch { /* local session is already cleared */ } }
     setToast('You have been logged out')
   }
@@ -95,7 +97,7 @@ export function AppProvider({ children }) {
   }
 
   const addBlog = async body => {
-    try { const { blog } = await api.createBlog(token(), body); setBlogs(previous => [blog, ...previous]); setToast('Community blog published'); return true }
+    try { const { blog } = await api.createBlog(token(), body); setBlogs(previous => [blog, ...previous]); setMyBlogs(previous => [blog, ...previous]); setToast('Community blog published'); return true }
     catch (error) { return handleError(error) }
   }
 
@@ -103,6 +105,7 @@ export function AppProvider({ children }) {
     try {
       const { blog } = await api.updateBlog(token(), id, body)
       setBlogs(previous => previous.map(item => item.id === id ? blog : item))
+      setMyBlogs(previous => previous.map(item => item.id === id ? blog : item))
       setToast('Community blog updated')
       return blog
     } catch (error) { handleError(error); return null }
@@ -112,6 +115,7 @@ export function AppProvider({ children }) {
     try {
       await api.deleteBlog(token(), id)
       setBlogs(previous => previous.filter(item => item.id !== id))
+      setMyBlogs(previous => previous.filter(item => item.id !== id))
       setToast('Community blog deleted')
       return true
     } catch (error) { return handleError(error) }
@@ -128,9 +132,9 @@ export function AppProvider({ children }) {
   }
 
   const value = useMemo(() => ({
-    user, requests, bookings, amenities, blogs, loading, toast, login, register, logout,
+    user, requests, bookings, amenities, blogs, myBlogs, loading, toast, login, register, logout,
     addRequest, updateRequest, addBooking, cancelBooking, addBlog, updateBlog, deleteBlog, getBlog, updateProfile
-  }), [user, requests, bookings, amenities, blogs, loading, toast, getBlog])
+  }), [user, requests, bookings, amenities, blogs, myBlogs, loading, toast, getBlog])
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
 }
