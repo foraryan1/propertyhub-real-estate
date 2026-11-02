@@ -15,10 +15,11 @@
 | Simple clean UI | Elegant Green design system |
 | Modular architecture | Pages/components/context separation |
 | Deployment | Vercel-ready Vite project |
+| Module 4 blog CRUD | MongoDB-backed create, read, update and delete with author/manager permissions |
+| Module 4 discovery | Search by title/content/author and filter posts by category |
 
 ## Intentionally out of scope
 - Native mobile app
 - Online rental payments
 - AI predictive maintenance
 - IoT integrations
-- Production backend/database/authentication

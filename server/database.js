@@ -1,6 +1,7 @@
 import mongoose from 'mongoose'
 
 const { Schema } = mongoose
+export const BLOG_CATEGORIES = ['Community', 'Events', 'Maintenance', 'Lifestyle', 'Announcements']
 
 const userSchema = new Schema({
   name: { type: String, required: true, trim: true, maxlength: 80 },
@@ -20,12 +21,15 @@ const sessionSchema = new Schema({
 const blogSchema = new Schema({
   title: { type: String, required: true, trim: true, minlength: 5, maxlength: 120 },
   content: { type: String, required: true, minlength: 20, maxlength: 5000 },
+  category: { type: String, enum: BLOG_CATEGORIES, default: 'Community', required: true },
   author: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   authorName: { type: String, required: true, trim: true, maxlength: 80 },
-  createdAt: { type: Date, default: Date.now, immutable: true }
+  createdAt: { type: Date, default: Date.now, immutable: true },
+  updatedAt: { type: Date, default: Date.now }
 }, { versionKey: false })
 
 blogSchema.index({ createdAt: -1 })
+blogSchema.index({ category: 1, createdAt: -1 })
 
 export const User = mongoose.models.User || mongoose.model('User', userSchema)
 export const Session = mongoose.models.Session || mongoose.model('Session', sessionSchema)

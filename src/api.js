@@ -35,7 +35,15 @@ export const api = {
   bookings: token => request('/bookings', { token }),
   createBooking: (token, body) => request('/bookings', { method: 'POST', token, body: json(body) }),
   cancelBooking: (token, id) => request(`/bookings/${encodeURIComponent(id)}/cancel`, { method: 'PATCH', token }),
-  blogs: token => request('/blogs', { token }),
-  createBlog: (token, body) => request('/blogs', { method: 'POST', token, body: json(body) })
+  blogs: (token, filters = {}) => {
+    const params = new URLSearchParams()
+    if (filters.q) params.set('q', filters.q)
+    if (filters.category && filters.category !== 'All categories') params.set('category', filters.category)
+    const query = params.toString()
+    return request(`/blogs${query ? `?${query}` : ''}`, { token })
+  },
+  blog: (token, id) => request(`/blogs/${encodeURIComponent(id)}`, { token }),
+  createBlog: (token, body) => request('/blogs', { method: 'POST', token, body: json(body) }),
+  updateBlog: (token, id, body) => request(`/blogs/${encodeURIComponent(id)}`, { method: 'PATCH', token, body: json(body) }),
+  deleteBlog: (token, id) => request(`/blogs/${encodeURIComponent(id)}`, { method: 'DELETE', token })
 }
-

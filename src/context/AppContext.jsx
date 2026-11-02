@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { api } from '../api'
 
 const AppContext = createContext(null)
@@ -99,6 +99,29 @@ export function AppProvider({ children }) {
     catch (error) { return handleError(error) }
   }
 
+  const updateBlog = async (id, body) => {
+    try {
+      const { blog } = await api.updateBlog(token(), id, body)
+      setBlogs(previous => previous.map(item => item.id === id ? blog : item))
+      setToast('Community blog updated')
+      return blog
+    } catch (error) { handleError(error); return null }
+  }
+
+  const deleteBlog = async id => {
+    try {
+      await api.deleteBlog(token(), id)
+      setBlogs(previous => previous.filter(item => item.id !== id))
+      setToast('Community blog deleted')
+      return true
+    } catch (error) { return handleError(error) }
+  }
+
+  const getBlog = useCallback(async id => {
+    try { const { blog } = await api.blog(token(), id); return blog }
+    catch (error) { setToast(error.message); return null }
+  }, [])
+
   const updateProfile = async body => {
     try { const { user: updated } = await api.updateProfile(token(), body); setUser(updated); setToast('Profile updated'); return true }
     catch (error) { return handleError(error) }
@@ -106,8 +129,8 @@ export function AppProvider({ children }) {
 
   const value = useMemo(() => ({
     user, requests, bookings, amenities, blogs, loading, toast, login, register, logout,
-    addRequest, updateRequest, addBooking, cancelBooking, addBlog, updateProfile
-  }), [user, requests, bookings, amenities, blogs, loading, toast])
+    addRequest, updateRequest, addBooking, cancelBooking, addBlog, updateBlog, deleteBlog, getBlog, updateProfile
+  }), [user, requests, bookings, amenities, blogs, loading, toast, getBlog])
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
 }

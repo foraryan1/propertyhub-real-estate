@@ -15,6 +15,7 @@ import { Bookings } from './pages/Bookings'
 import { Profile } from './pages/Profile'
 import { Manager } from './pages/Manager'
 import { Blog } from './pages/Blog'
+import { BlogDetail } from './pages/BlogDetail'
 
 function Protected({ children }) {
   const { user, loading } = useApp()
@@ -37,6 +38,7 @@ function App() {
             <Route path="amenities" element={<Amenities />} />
             <Route path="bookings" element={<Bookings />} />
             <Route path="blog" element={<Blog />} />
+            <Route path="blog/:id" element={<BlogDetail />} />
             <Route path="profile" element={<Profile />} />
             <Route path="manager" element={<Manager />} />
           </Route>
