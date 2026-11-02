@@ -14,9 +14,11 @@ import { Amenities } from './pages/Amenities'
 import { Bookings } from './pages/Bookings'
 import { Profile } from './pages/Profile'
 import { Manager } from './pages/Manager'
+import { Blog } from './pages/Blog'
 
 function Protected({ children }) {
-  const { user } = useApp()
+  const { user, loading } = useApp()
+  if (loading) return <div className="auth-loading">Loading your PropertyHub workspace…</div>
   return user ? children : <Navigate to="/login" replace />
 }
 
@@ -34,6 +36,7 @@ function App() {
             <Route path="maintenance" element={<Maintenance />} />
             <Route path="amenities" element={<Amenities />} />
             <Route path="bookings" element={<Bookings />} />
+            <Route path="blog" element={<Blog />} />
             <Route path="profile" element={<Profile />} />
             <Route path="manager" element={<Manager />} />
           </Route>
