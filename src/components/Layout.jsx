@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Home, Wrench, Sparkles, CalendarDays, UserRound, LogOut, Menu, X, Bell, ChevronDown, ShieldCheck } from 'lucide-react'
+import { LayoutDashboard, Home, Wrench, Sparkles, CalendarDays, UserRound, LogOut, Menu, X, Bell, ChevronDown, ShieldCheck, BookOpen } from 'lucide-react'
 import { Logo } from './Logo'
 import { useApp } from '../context/AppContext'
 
@@ -9,18 +9,20 @@ const links = [
   { to: '/app/property', label: 'My Property', icon: Home },
   { to: '/app/maintenance', label: 'Maintenance', icon: Wrench },
   { to: '/app/amenities', label: 'Amenities', icon: Sparkles },
-  { to: '/app/bookings', label: 'Bookings', icon: CalendarDays }
+  { to: '/app/bookings', label: 'Bookings', icon: CalendarDays },
+  { to: '/app/blog', label: 'Community blog', icon: BookOpen }
 ]
 
 export function Layout() {
   const [open, setOpen] = useState(false)
-  const { user, logout, requests } = useApp()
+  const { user, logout, requests, toast } = useApp()
   const navigate = useNavigate()
   const location = useLocation()
   const pending = requests.filter(r => r.status !== 'Completed').length
   const page = location.pathname.includes('maintenance') ? 'Maintenance' :
     location.pathname.includes('amenities') ? 'Amenities' :
     location.pathname.includes('bookings') ? 'Bookings' :
+    location.pathname.includes('blog') ? 'Community blog' :
     location.pathname.includes('property') ? 'My Property' :
     location.pathname.includes('profile') ? 'Profile' :
     location.pathname.includes('manager') ? 'Manager' : 'Dashboard'
@@ -52,6 +54,7 @@ export function Layout() {
         </div>
       </aside>
 
+      {toast && <div className="inline-success" role="status">{toast}</div>}
       {open && <div className="mobile-overlay" onClick={() => setOpen(false)} />}
       <main className="main-area">
         <header className="topbar">
