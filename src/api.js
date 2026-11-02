@@ -1,4 +1,5 @@
-const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:4000/api').replace(/\/$/, '')
+const defaultApiBase = import.meta.env.PROD ? '/api' : 'http://localhost:4000/api'
+const API_BASE = (import.meta.env.VITE_API_URL || defaultApiBase).replace(/\/$/, '')
 
 async function request(path, { token, ...options } = {}) {
   const headers = new Headers(options.headers || {})
@@ -43,6 +44,7 @@ export const api = {
     return request(`/blogs${query ? `?${query}` : ''}`, { token })
   },
   blog: (token, id) => request(`/blogs/${encodeURIComponent(id)}`, { token }),
+  myBlogs: token => request('/blogs/mine', { token }),
   createBlog: (token, body) => request('/blogs', { method: 'POST', token, body: json(body) }),
   updateBlog: (token, id, body) => request(`/blogs/${encodeURIComponent(id)}`, { method: 'PATCH', token, body: json(body) }),
   deleteBlog: (token, id) => request(`/blogs/${encodeURIComponent(id)}`, { method: 'DELETE', token })
