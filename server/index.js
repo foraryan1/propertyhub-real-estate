@@ -14,7 +14,9 @@ const projectDir = dirname(serverDir)
 loadEnvFile(join(projectDir, '.env'))
 
 const app = express()
+app.set('trust proxy', 1)
 const port = Number(process.env.PORT || 4000)
+const frontendDir = join(projectDir, 'dist')
 const allowedOrigins = new Set([
   'http://localhost:5173',
   'http://127.0.0.1:5173',
@@ -34,10 +36,24 @@ const store = {
 
 const asyncRoute = handler => (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next)
 
+const requireAuth = asyncRoute(async (req, res, next) => {
+  const token = req.headers.authorization?.match(/^Bearer\s+(.+)$/i)?.[1]
+  if (!token) return res.status(401).json({ error: 'Please sign in to continue.' })
+  const tokenHash = hashToken(token)
+  const session = await Session.findOne({ tokenHash, expiresAt: { $gt: new Date() } }).select('+tokenHash')
+  if (!session) return res.status(401).json({ error: 'Please sign in to continue.' })
+  const user = await User.findById(session.userId)
+  if (!user) return res.status(401).json({ error: 'Please sign in to continue.' })
+  req.user = user
+  req.sessionId = session._id
+  next()
+})
+
 app.disable('x-powered-by')
 app.use((req, res, next) => {
   const origin = req.headers.origin
-  if (origin && !allowedOrigins.has(origin)) {
+  const isSameOrigin = origin === `${req.protocol}://${req.get('host')}`
+  if (origin && !allowedOrigins.has(origin) && !(process.env.NODE_ENV === 'production' && isSameOrigin)) {
     return res.status(403).json({ error: 'This website is not allowed to access the API.' })
   }
   if (origin) {
@@ -57,7 +73,7 @@ app.get('/api/health', (req, res) => {
   res.status(connected ? 200 : 503).json({
     status: connected ? 'ok' : 'database unavailable',
     service: 'PropertyHub API',
-    module: 4,
+    module: 6,
     database: connected ? 'connected' : 'disconnected'
   })
 })
@@ -236,6 +252,11 @@ app.get('/api/blogs', requireAuth, asyncRoute(async (req, res) => {
   res.json({ blogs: blogs.map(publicBlog) })
 }))
 
+app.get('/api/blogs/mine', requireAuth, asyncRoute(async (req, res) => {
+  const blogs = await Blog.find({ author: req.user._id }).sort({ createdAt: -1 }).lean()
+  res.json({ blogs: blogs.map(publicBlog) })
+}))
+
 app.get('/api/blogs/:id', requireAuth, asyncRoute(async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) return res.status(404).json({ error: 'Blog post not found.' })
   const blog = await Blog.findById(req.params.id).lean()
@@ -293,6 +314,13 @@ app.delete('/api/blogs/:id', requireAuth, asyncRoute(async (req, res) => {
   res.sendStatus(204)
 }))
 
+if (existsSync(join(frontendDir, 'index.html'))) {
+  app.use(express.static(frontendDir, { index: false }))
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) return next()
+    res.sendFile(join(frontendDir, 'index.html'), error => error && next(error))
+  })
+}
 app.use((req, res) => res.status(404).json({ error: 'API route not found.' }))
 app.use((error, req, res, next) => {
   console.error(error)
@@ -306,21 +334,6 @@ app.listen(port, () => {
   console.log(`PropertyHub API listening at http://localhost:${port}`)
   console.log('MongoDB connected. Users, sessions and community blogs persist across restarts.')
   console.log('Maintenance requests and amenity bookings remain in memory in this module.')
-})
-
-const requireAuth = asyncRoute(async (req, res, next) => {
-  const token = req.headers.authorization?.match(/^Bearer\s+(.+)$/i)?.[1]
-  if (!token) {
-    return res.status(401).json({ error: 'Please sign in to continue.' })
-  }
-  const tokenHash = hashToken(token)
-  const session = await Session.findOne({ tokenHash, expiresAt: { $gt: new Date() } }).select('+tokenHash')
-  if (!session) return res.status(401).json({ error: 'Please sign in to continue.' })
-  const user = await User.findById(session.userId)
-  if (!user) return res.status(401).json({ error: 'Please sign in to continue.' })
-  req.user = user
-  req.sessionId = session._id
-  next()
 })
 
 function requireManager(req, res, next) {
