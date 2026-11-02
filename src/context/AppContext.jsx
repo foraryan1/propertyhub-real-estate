@@ -1,106 +1,115 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { api } from '../api'
 
 const AppContext = createContext(null)
-
-const seedRequests = [
-  { id: 'MT-1024', title: 'AC not cooling', location: 'Living room', status: 'In Progress', created: '30 Aug 2026', priority: 'High', description: 'The air conditioner is running but not cooling the room.' },
-  { id: 'MT-1021', title: 'Water leakage', location: 'Kitchen sink', status: 'Pending', created: '29 Aug 2026', priority: 'Medium', description: 'Small water leak underneath the kitchen sink.' },
-  { id: 'MT-1018', title: 'Light replacement', location: 'Master bedroom', status: 'Completed', created: '27 Aug 2026', priority: 'Low', description: 'Ceiling light stopped working.' },
-  { id: 'MT-1012', title: 'Door lock repair', location: 'Main entrance', status: 'Pending', created: '25 Aug 2026', priority: 'High', description: 'Main door lock is becoming difficult to turn.' }
-]
-
-const seedBookings = [
-  { id: 'BK-204', amenity: 'Swimming Pool', date: '31 Aug 2026', start: '10:00 AM', end: '11:00 AM', status: 'Confirmed' },
-  { id: 'BK-201', amenity: 'Community Hall', date: '02 Sep 2026', start: '05:00 PM', end: '07:00 PM', status: 'Confirmed' }
-]
-
-const amenities = [
-  { id: 1, name: 'Swimming Pool', icon: 'pool', location: 'Block A · Ground Floor', hours: '7:00 AM – 9:00 PM', capacity: 12, accent: 'aqua', description: 'A clean, temperature-controlled pool for residents and guests.' },
-  { id: 2, name: 'Community Hall', icon: 'hall', location: 'Block A · First Floor', hours: '9:00 AM – 10:00 PM', capacity: 60, accent: 'gold', description: 'Spacious event room for celebrations, meetings and community gatherings.' },
-  { id: 3, name: 'Fitness Studio', icon: 'gym', location: 'Block B · Ground Floor', hours: '6:00 AM – 10:00 PM', capacity: 15, accent: 'purple', description: 'A modern workout area with cardio and strength equipment.' },
-  { id: 4, name: 'Co-working Lounge', icon: 'work', location: 'Clubhouse · First Floor', hours: '8:00 AM – 11:00 PM', capacity: 20, accent: 'blue', description: 'Quiet desks, fast Wi-Fi and comfortable spaces for focused work.' }
-]
+const TOKEN_KEY = 'propertyhub_session'
 
 export function AppProvider({ children }) {
-  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('ph_user') || 'null'))
-  const [requests, setRequests] = useState(() => JSON.parse(localStorage.getItem('ph_requests') || JSON.stringify(seedRequests)))
-  const [bookings, setBookings] = useState(() => JSON.parse(localStorage.getItem('ph_bookings') || JSON.stringify(seedBookings)))
+  const [user, setUser] = useState(null)
+  const [requests, setRequests] = useState([])
+  const [bookings, setBookings] = useState([])
+  const [amenities, setAmenities] = useState([])
+  const [blogs, setBlogs] = useState([])
+  const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState('')
 
-  useEffect(() => localStorage.setItem('ph_requests', JSON.stringify(requests)), [requests])
-  useEffect(() => localStorage.setItem('ph_bookings', JSON.stringify(bookings)), [bookings])
   useEffect(() => {
-    if (user) localStorage.setItem('ph_user', JSON.stringify(user))
-    else localStorage.removeItem('ph_user')
-  }, [user])
+    let active = true
+    const token = sessionStorage.getItem(TOKEN_KEY)
+    if (!token) { setLoading(false); return () => { active = false } }
+    api.me(token)
+      .then(({ user: currentUser }) => active && setUser(currentUser))
+      .then(() => active && loadWorkspace(token))
+      .catch(() => { sessionStorage.removeItem(TOKEN_KEY); if (active) setUser(null) })
+      .finally(() => active && setLoading(false))
+    return () => { active = false }
+  }, [])
 
   useEffect(() => {
     if (!toast) return
-    const timer = setTimeout(() => setToast(''), 3000)
+    const timer = setTimeout(() => setToast(''), 3500)
     return () => clearTimeout(timer)
   }, [toast])
 
-  const login = (email, role = 'tenant') => {
-    const fallback = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
-    setUser({ name: fallback || 'Shivaji', email, role })
-    setToast('Welcome back to PropertyHub')
+  const loadWorkspace = async token => {
+    const [requestData, bookingData, amenityData, blogData] = await Promise.all([
+      api.maintenance(token), api.bookings(token), api.amenities(token), api.blogs(token)
+    ])
+    setRequests(requestData.requests)
+    setBookings(bookingData.bookings)
+    setAmenities(amenityData.amenities)
+    setBlogs(blogData.blogs)
   }
 
-  const register = (name, email) => {
-    setUser({ name, email, role: 'tenant' })
-    setToast('Account created successfully')
+  const token = () => sessionStorage.getItem(TOKEN_KEY)
+  const handleError = error => { setToast(error.message); return false }
+
+  const login = async (email, password) => {
+    try {
+      const result = await api.login({ email, password })
+      sessionStorage.setItem(TOKEN_KEY, result.token)
+      setUser(result.user)
+      await loadWorkspace(result.token)
+      setToast('Welcome back to PropertyHub')
+      return true
+    } catch (error) { setToast(error.message); return error.message }
   }
 
-  const logout = () => {
-    setUser(null)
+  const register = async (name, email, password) => {
+    try {
+      const result = await api.register({ name, email, password })
+      sessionStorage.setItem(TOKEN_KEY, result.token)
+      setUser(result.user)
+      await loadWorkspace(result.token)
+      setToast('Account created successfully')
+      return true
+    } catch (error) { setToast(error.message); return error.message }
+  }
+
+  const logout = async () => {
+    const savedToken = token()
+    sessionStorage.removeItem(TOKEN_KEY)
+    setUser(null); setRequests([]); setBookings([]); setBlogs([])
+    if (savedToken) { try { await api.logout(savedToken) } catch { /* local session is already cleared */ } }
     setToast('You have been logged out')
   }
 
-  const addRequest = data => {
-    const newRequest = {
-      id: `MT-${Math.floor(1000 + Math.random() * 8999)}`,
-      ...data,
-      status: 'Pending',
-      created: '30 Aug 2026'
-    }
-    setRequests(prev => [newRequest, ...prev])
-    setToast('Maintenance request submitted')
+  const addRequest = async data => {
+    try { const { request } = await api.createMaintenance(token(), data); setRequests(previous => [request, ...previous]); setToast('Maintenance request submitted'); return true }
+    catch (error) { return handleError(error) }
   }
 
-  const updateRequest = (id, status) => {
-    setRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r))
-    setToast(`Request ${id} updated to ${status}`)
+  const updateRequest = async (id, status) => {
+    try { const { request } = await api.updateMaintenance(token(), id, status); setRequests(previous => previous.map(item => item.id === id ? request : item)); setToast(`Request ${id} updated to ${status}`); return true }
+    catch (error) { return handleError(error) }
   }
 
-  const addBooking = booking => {
-    const conflict = bookings.some(b =>
-      b.date === booking.date &&
-      b.amenity === booking.amenity &&
-      b.status !== 'Cancelled' &&
-      booking.start < b.end &&
-      booking.end > b.start
-    )
-    if (conflict) {
-      setToast('That time slot is already booked')
-      return false
-    }
-    setBookings(prev => [{ id: `BK-${Math.floor(100 + Math.random() * 899)}`, ...booking, status: 'Confirmed' }, ...prev])
-    setToast('Amenity booked successfully')
-    return true
+  const addBooking = async booking => {
+    try { const { booking: created } = await api.createBooking(token(), booking); setBookings(previous => [created, ...previous]); setToast('Amenity booked successfully'); return true }
+    catch (error) { return handleError(error) }
   }
 
-  const cancelBooking = id => {
-    setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'Cancelled' } : b))
-    setToast('Booking cancelled')
+  const cancelBooking = async id => {
+    try { const { booking } = await api.cancelBooking(token(), id); setBookings(previous => previous.map(item => item.id === id ? booking : item)); setToast('Booking cancelled'); return true }
+    catch (error) { return handleError(error) }
   }
 
-  const value = useMemo(
-    () => ({ user, requests, bookings, amenities, toast, login, register, logout, addRequest, updateRequest, addBooking, cancelBooking }),
-    [user, requests, bookings, toast]
-  )
+  const addBlog = async body => {
+    try { const { blog } = await api.createBlog(token(), body); setBlogs(previous => [blog, ...previous]); setToast('Community blog published'); return true }
+    catch (error) { return handleError(error) }
+  }
+
+  const updateProfile = async body => {
+    try { const { user: updated } = await api.updateProfile(token(), body); setUser(updated); setToast('Profile updated'); return true }
+    catch (error) { return handleError(error) }
+  }
+
+  const value = useMemo(() => ({
+    user, requests, bookings, amenities, blogs, loading, toast, login, register, logout,
+    addRequest, updateRequest, addBooking, cancelBooking, addBlog, updateProfile
+  }), [user, requests, bookings, amenities, blogs, loading, toast])
+
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
 }
 
-export function useApp() {
-  return useContext(AppContext)
-}
+export function useApp() { return useContext(AppContext) }
