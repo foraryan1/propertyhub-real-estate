@@ -18,14 +18,14 @@ export function Landing() {
           <h1>Everything your<br /><em>property needs,</em><br />in one place.</h1>
           <p>Manage maintenance, reserve amenities, and stay connected with your property team through one simple resident platform.</p>
           <div className="hero-buttons"><Link to="/register" className="primary-btn">Create free account <ArrowRight size={18} /></Link><a href="#features" className="secondary-btn">Explore features</a></div>
-          <div className="trust-row"><div className="trust-avatars"><span>S</span><span>A</span><span>R</span><span>+</span></div><div><strong>4.8/5 resident satisfaction</strong><small>Designed for effortless property living</small></div></div>
+          <div className="trust-row"><div className="trust-avatars"><span><ShieldCheck size={17} /></span></div><div><strong>Built for resident communities</strong><small>Maintenance · amenities · community updates</small></div></div>
         </div>
         <div className="hero-visual">
           <div className="hero-glow" />
           <div className="hero-dashboard">
             <div className="mock-sidebar"><Logo light /><div className="mock-nav active">⌂ Dashboard</div><div className="mock-nav">⌂ My Property</div><div className="mock-nav">⚒ Maintenance</div><div className="mock-nav">✦ Amenities</div><div className="mock-nav">▣ Bookings</div></div>
             <div className="mock-main">
-              <div className="mock-top"><div><small>DASHBOARD</small><h3>Good morning, Shivaji</h3></div><div className="mock-avatar">S</div></div>
+              <div className="mock-top"><div><small>DASHBOARD</small><h3>Good morning, Resident</h3></div><div className="mock-avatar">R</div></div>
               <div className="mock-cards"><div><small>Total Requests</small><strong>04</strong><span>View all →</span></div><div><small>Upcoming Bookings</small><strong>02</strong><span>View all →</span></div><div><small>Open Issues</small><strong>02</strong><span>View all →</span></div></div>
               <div className="mock-panels"><div className="mock-panel"><div className="mock-panel-head">Maintenance Requests <span>View all</span></div><div className="mock-row"><b>AC not cooling</b><StatusMini text="In Progress" type="blue" /></div><div className="mock-row"><b>Water leakage</b><StatusMini text="Pending" type="gold" /></div><div className="mock-row"><b>Light replacement</b><StatusMini text="Completed" type="green" /></div></div><div className="mock-panel"><div className="mock-panel-head">Upcoming Bookings <span>View all</span></div><div className="booking-mini"><span>🏊</span><div><b>Swimming Pool</b><small>31 Aug · 10:00 AM</small></div></div><div className="booking-mini"><span>🏛</span><div><b>Community Hall</b><small>02 Sep · 05:00 PM</small></div></div></div></div>
               <div className="mock-announcement"><div><small>COMMUNITY UPDATE</small><b>Water supply maintenance on 5th Sep</b><span>10:00 AM – 2:00 PM</span></div><div className="city-art"><i/><i/><i/><i/></div></div>
